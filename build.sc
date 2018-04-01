@@ -4,6 +4,9 @@ import coursier.maven.MavenRepository
 import publish._
 
 object animeplanet extends ScalaModule {
+  /** Main class */
+  def mainClass = Some("com.github.sguzman.anime.planet.Main")
+
   /** Name of project */
   def name = "AnimePlanetScraper"
 

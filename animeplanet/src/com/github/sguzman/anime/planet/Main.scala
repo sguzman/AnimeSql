@@ -266,6 +266,7 @@ object Main {
             genres
           )
 
+          scribe.debug(s"Adding item $fullTitle")
           itemCache.animeTitles.add(fullTitle)
         }
       }

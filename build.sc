@@ -90,5 +90,17 @@ object animeplanet extends ScalaModule {
     ivy"org.apache.commons:commons-lang3:3.7"
   )
 
+  /** Non maven dependencies */
+  def unmanagedClasspath = Agg(
+    mill.modules.Util.download(
+      "https://github.com/sguzman/BrotliExec/releases/download/1.0.0/com.github.sguzman.brotliexec.1.0.0.jar",
+      "com.github.sguzman.brotliexec.1.0.0.jar"
+    ),
+    mill.module.Util.download(
+      "https://github.com/sguzman/HtmlCondenser/releases/download/v1.0.0/com.github.sguzman.htmlcondenser.1.0.0.jar",
+      "com.github.sguzman.htmlcondenser.1.0.0.jar"
+    )
+  )
+
   def forkArgs = Seq("-Xmx4g")
 }

@@ -238,8 +238,7 @@ object Main {
         val desc = inner.map("p").text
 
         val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
-
-        itemCache.animeTitles.add(AnimeTitle(
+        val fullTitle = AnimeTitle(
           title,
           img,
           link,
@@ -249,7 +248,11 @@ object Main {
           rating,
           `type`,
           genres
-        ))
+        )
+
+        scribe.info(s"Adding item $fullTitle")
+
+        itemCache.animeTitles.add(fullTitle)
         }
       }
     }

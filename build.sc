@@ -99,7 +99,8 @@ object animeplanet extends ScalaModule {
   def ivyDeps = Agg(
     ivy"net.ruippeixotog::scala-scraper:2.1.0",
     ivy"org.scalaj::scalaj-http:2.3.0",
-    ivy"org.apache.commons:commons-lang3:3.7"
+    ivy"org.apache.commons:commons-lang3:3.7",
+    ivy"com.outr::scribe:2.3.1"
   )
 
   def forkArgs = Seq("-Xmx4g")

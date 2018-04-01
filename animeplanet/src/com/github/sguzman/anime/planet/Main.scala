@@ -207,16 +207,15 @@ object Main {
     }
     else if (httpCache.contains(url)) {
       scribe.info(s"Missed item cache for $url but hit http cache")
-      val html = httpCache(url)
-      val result = f(JsoupBrowser().parseString(Brotli.decompress(html)))
+      val html = retryHttpGet(url)
+      val result = f(html.doc)
       scribe.info(s"Got key $url -> $result")
       cache.put(url, result)
       result
     } else {
       scribe.info(s"Missed http cache... calling $url")
       val html = retryHttpGet(url)
-      httpCache.put(url, Brotli.compress(html))
-      val result = f(JsoupBrowser().parseString(html))
+      val result = f(html.doc)
       scribe.info(s"After HTTP request, got key $url -> $result")
       cache.put(url, result)
       result

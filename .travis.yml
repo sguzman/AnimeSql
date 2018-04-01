@@ -1,0 +1,17 @@
+dist: trusty
+sudo: required
+
+language: scala
+scala:
+   - 2.12.4
+
+notifications:
+    slack: initialcommitio:QadMr0XToU1nr1dteV5nYFpW
+
+before_install:
+  - sudo curl -L -o ./mill https://github.com/lihaoyi/mill/releases/download/0.1.7/0.1.7
+  - sudo chmod +x ./mill
+
+
+script:
+ - ./mill all animeplanet.{compile,test,assembly}

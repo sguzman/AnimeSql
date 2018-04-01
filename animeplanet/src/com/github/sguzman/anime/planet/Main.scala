@@ -155,8 +155,17 @@ object Main {
     writeHttpCache()
   }))
 
-  def retryHttpGet(url: String): String = util.Try(Http(url).asString) match {
-    case Success(v) => v.body
+  def httpCacheQuery(url: String): String =
+    if (httpCache.contains(url)) {
+      Brotli.decompress(httpCache(url))
+    } else {
+      val body = Http(url).asString.body
+      httpCache.put(url, Brotli.compress(body))
+      body
+    }
+
+  def retryHttpGet(url: String): String = util.Try(httpCacheQuery(url)) match {
+    case Success(v) => v
     case Failure(e) => e match {
       case _: SocketTimeoutException => retryHttpGet(url)
       case _ => throw new Exception(s"Url: $url; ${e.getMessage}")
@@ -230,8 +239,7 @@ object Main {
       pages.par.foreach{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
         val html = retryHttpGet(url)
-        val condensed = html
-        val doc = condensed.doc
+        val doc = html.doc
 
         doc.flatMap("div#siteContainer > ul.cardDeck > li.card").map{b =>
           val doc2 = b.innerHtml.doc

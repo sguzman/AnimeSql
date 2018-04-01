@@ -4,7 +4,6 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException
 
 import com.github.sguzman.brotli.Brotli
-import com.github.sguzman.htmlcondenser.Condenser
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
@@ -88,7 +87,7 @@ object Main {
         val rating = msg.unpackDouble
         val `type` = msg.unpackString
         val genreLen = msg.unpackArrayHeader
-        val genres = (1 to len).map(_ => msg.unpackString).toSet
+        val genres = (1 to genreLen).map(_ => msg.unpackString).toSet
 
         AnimeTitle(title, img, link, desc, studio, year, rating, `type`, genres)
       }

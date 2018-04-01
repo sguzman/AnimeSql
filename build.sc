@@ -4,6 +4,18 @@ import coursier.maven.MavenRepository
 import publish._
 
 object animeplanet extends ScalaModule {
+  /** Non maven dependencies */
+  def unmanagedClasspath = Agg(
+    mill.modules.Util.download(
+      "https://github.com/sguzman/BrotliExec/releases/download/1.0.0/com.github.sguzman.brotliexec.1.0.0.jar",
+      "com.github.sguzman.brotliexec.1.0.0.jar"
+    ),
+    mill.modules.Util.download(
+      "https://github.com/sguzman/HtmlCondenser/releases/download/v1.0.0/com.github.sguzman.htmlcondenser.1.0.0.jar",
+      "com.github.sguzman.htmlcondenser.1.0.0.jar"
+    )
+  )
+
   /** Main class */
   def mainClass = Some("com.github.sguzman.anime.planet.Main")
 
@@ -88,18 +100,6 @@ object animeplanet extends ScalaModule {
     ivy"net.ruippeixotog::scala-scraper:2.1.0",
     ivy"org.scalaj::scalaj-http:2.3.0",
     ivy"org.apache.commons:commons-lang3:3.7"
-  )
-
-  /** Non maven dependencies */
-  def unmanagedClasspath = Agg(
-    mill.modules.Util.download(
-      "https://github.com/sguzman/BrotliExec/releases/download/1.0.0/com.github.sguzman.brotliexec.1.0.0.jar",
-      "com.github.sguzman.brotliexec.1.0.0.jar"
-    ),
-    mill.module.Util.download(
-      "https://github.com/sguzman/HtmlCondenser/releases/download/v1.0.0/com.github.sguzman.htmlcondenser.1.0.0.jar",
-      "com.github.sguzman.htmlcondenser.1.0.0.jar"
-    )
   )
 
   def forkArgs = Seq("-Xmx4g")

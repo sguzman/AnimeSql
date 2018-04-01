@@ -3,7 +3,7 @@ import mill.scalalib._
 import coursier.maven.MavenRepository
 import publish._
 
-object condenser extends ScalaModule {
+object animeplanet extends ScalaModule {
   /** Name of project */
   def name = "AnimePlanetScraper"
 

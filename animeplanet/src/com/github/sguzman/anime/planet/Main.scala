@@ -4,6 +4,7 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException
 
 import com.github.sguzman.brotli.Brotli
+import com.github.sguzman.htmlcondenser.Condenser
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
@@ -204,7 +205,7 @@ object Main {
     }
     else if (httpCache.contains(url)) {
       scribe.info(s"Missed item cache for $url but hit http cache")
-      val html = retryHttpGet(url)
+      val html = Condenser.condenseString(retryHttpGet(url))
       val result = f(html.doc)
       scribe.info(s"Got key $url -> $result")
       cache.put(url, result)

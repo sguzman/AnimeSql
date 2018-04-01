@@ -1,9 +1,10 @@
 package com.github.sguzman.anime.planet
 
 import java.io.{File, FileInputStream, FileOutputStream}
-import java.net.SocketTimeoutException
+import java.net.{SocketTimeoutException, URL}
 
 import com.github.sguzman.brotli.Brotli
+import com.github.sguzman.htmlcondenser.Condenser
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
@@ -12,6 +13,7 @@ import org.msgpack.core.{MessagePack, MessagePacker, MessageUnpacker}
 import scalaj.http.Http
 
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 object Main {
@@ -67,12 +69,12 @@ object Main {
         val rating = msg.unpackDouble
         val `type` = msg.unpackString
         val genreLen = msg.unpackArrayHeader
-        val genres = (1 to len).map(_ => msg.unpackString).toList
+        val genres = (1 to len).map(_ => msg.unpackString).toSet
 
-        AnimeTitles(title, img, link, desc, studio, year, rating, `type`, genres)
-      }.toList
+        AnimeTitle(title, img, link, desc, studio, year, rating, `type`, genres)
+      }
 
-      val is = Items(titles)
+      val is = Items(mutable.Set(titles: _*))
       msg.close()
       is
     }
@@ -94,7 +96,7 @@ object Main {
     MessagePack.newDefaultPacker(new FileOutputStream(file)).httpMap()
   }
 
-  final case class AnimeTitles(
+  final case class AnimeTitle(
                                 title: String,
                                 img: String,
                                 link: String,
@@ -103,15 +105,15 @@ object Main {
                                 year: String,
                                 rating: Double,
                                 `type`: String,
-                                genres: List[String]
+                                genres: Set[String]
                               )
-  final case class Items(animeTitles: List[AnimeTitles])
+  final case class Items(animeTitles: mutable.Set[AnimeTitle])
 
   val itemCache: Items = identity {
     val file = new File("./items.msg")
     if (!file.exists) {
       file.createNewFile()
-      Items(List())
+      Items(mutable.Set())
     } else {
       MessagePack.newDefaultUnpacker(new FileInputStream(file)).items
     }
@@ -195,7 +197,36 @@ object Main {
       val pages = 1 to 318
       pages.par.foreach{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
-        get(url)(a => false)(identity)((a, b) => {})(doc => "")
+        val html = retryHttpGet(url)
+        val condensed = Condenser.condenseString(html)
+        val doc = condensed.doc
+
+        val img = doc.map("li.card > a[title] > div.crop > img[src]").attr("src")
+        val title = doc.map("li.card > a[title] > h4").text
+        val link = doc.map("li.card > a[href]").attr("href")
+        val inner = doc.map("li.card > a[title]").attr("title").doc
+
+        val `type` = inner.map("ul.entryBar > li.type").text
+        val year = inner.map("ul.entryBar > li.iconYear").text
+        val studio = inner.map("ul.entryBar > li:nth-child(2)").text
+        val rating = inner.map("ul.entryBar > li.iconYear > li > div.ttRating").text.toDouble
+        val desc = inner.map("p").text
+
+        val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
+
+
+        itemCache.animeTitles.add(AnimeTitle(
+          title,
+          img,
+          link,
+          desc,
+          studio,
+          year,
+          rating,
+          `type`,
+          genres
+        ))
+        }
       }
     }
 

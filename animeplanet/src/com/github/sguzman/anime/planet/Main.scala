@@ -178,10 +178,7 @@ object Main {
       case None => throw new Exception(s"$s $a")
     }
 
-    def maybeMap[A](s: String, f: Element => A, a: A): A = doc.>?>(element(s)) match {
-      case Some(v) => f(v)
-      case None => a
-    }
+    def maybe(s: String) = doc.>?>(element(s))
 
     def flatMap(s: String): List[Element] = doc.>?>(elementList(s)) match {
       case Some(v) => v
@@ -248,9 +245,9 @@ object Main {
           val inner = doc2.map("a[title]").attr("title").doc
 
           val `type` = inner.map("ul.entryBar > li.type").text
-          val year = inner.map("ul.entryBar > li.iconYear").text
+          val year = inner.maybe("ul.entryBar > li.iconYear").map(_.text).getOrElse("")
           val studio = inner.map("ul.entryBar > li:nth-child(2)").text
-          val rating = inner.map("ul.entryBar > li > div.ttRating", url).text.toDouble
+          val rating = inner.maybe("ul.entryBar > li > div.ttRating").map(_.text.toDouble).getOrElse(-1.0d)
           val desc = inner.map("p").text
 
           val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet

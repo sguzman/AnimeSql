@@ -230,37 +230,40 @@ object Main {
       pages.par.foreach{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
         val html = retryHttpGet(url)
-        val condensed = Condenser.condenseString(html)
+        val condensed = html
         val doc = condensed.doc
 
-        val img = doc.map("li.card > a[title] > div.crop > img[src]").attr("src")
-        val title = doc.map("li.card > a[title] > h4").text
-        val link = doc.map("li.card > a[href]").attr("href")
-        val inner = doc.map("li.card > a[title]").attr("title").doc
+        doc.flatMap("div#siteContainer > ul.cardDeck > li.card").map{b =>
+          val doc2 = b.innerHtml.doc
+          val img = doc2.map("a[title] > div.crop > img[src]", url).attr("src")
+          val title = doc2.map("a[title] > h4").text
+          val link = doc2.map("a[href]").attr("href")
+          val inner = doc2.map("a[title]").attr("title").doc
 
-        val `type` = inner.map("ul.entryBar > li.type").text
-        val year = inner.map("ul.entryBar > li.iconYear").text
-        val studio = inner.map("ul.entryBar > li:nth-child(2)").text
-        val rating = inner.map("ul.entryBar > li.iconYear > li > div.ttRating").text.toDouble
-        val desc = inner.map("p").text
+          val `type` = inner.map("ul.entryBar > li.type").text
+          val year = inner.map("ul.entryBar > li.iconYear").text
+          val studio = inner.map("ul.entryBar > li:nth-child(2)").text
+          val rating = inner.map("ul.entryBar > li.iconYear > li > div.ttRating", url).text.toDouble
+          val desc = inner.map("p").text
 
-        val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
-        val fullTitle = AnimeTitle(
-          title,
-          img,
-          link,
-          desc,
-          studio,
-          year,
-          rating,
-          `type`,
-          genres
-        )
+          val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
+          val fullTitle = AnimeTitle(
+            title,
+            img,
+            link,
+            desc,
+            studio,
+            year,
+            rating,
+            `type`,
+            genres
+          )
 
-        scribe.info(s"Adding item $fullTitle")
+          scribe.info(s"Adding item $fullTitle")
 
-        itemCache.animeTitles.add(fullTitle)
+          itemCache.animeTitles.add(fullTitle)
         }
+      }
     }
 
 

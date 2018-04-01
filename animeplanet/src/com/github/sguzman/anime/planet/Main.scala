@@ -266,13 +266,12 @@ object Main {
             genres
           )
 
-          scribe.info(s"Adding item $fullTitle")
+          scribe.debug(s"Adding item $fullTitle")
 
           itemCache.animeTitles.add(fullTitle)
         }
       }
     }
-
 
     scribe.info("done")
   }

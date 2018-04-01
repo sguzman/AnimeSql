@@ -1,7 +1,7 @@
 package com.github.sguzman.anime.planet
 
 import java.io.{File, FileInputStream, FileOutputStream}
-import java.net.{SocketTimeoutException, URL}
+import java.net.SocketTimeoutException
 
 import com.github.sguzman.brotli.Brotli
 import com.github.sguzman.htmlcondenser.Condenser
@@ -28,6 +28,25 @@ object Main {
       httpCache.keysIterator.foreach{key =>
         msg.packString(key)
         msg.binary(httpCache(key))
+      }
+
+      msg.close()
+    }
+
+    def items(): Unit = {
+      val list = itemCache.animeTitles.toList
+      msg.packArrayHeader(list.length)
+      list.foreach {a =>
+        msg.packString(a.title)
+        msg.packString(a.img)
+        msg.packString(a.link)
+        msg.packString(a.desc)
+        msg.packString(a.studio)
+        msg.packString(a.year)
+        msg.packDouble(a.rating)
+        msg.packString(a.`type`)
+        msg.packArrayHeader(a.genres.size)
+        a.genres.foreach(msg.packString)
       }
 
       msg.close()
@@ -119,7 +138,13 @@ object Main {
     }
   }
 
+  def writeItemCache(): Unit = {
+    val file = new File("./items.msg")
+    MessagePack.newDefaultPacker(new FileOutputStream(file)).items
+  }
+
   Runtime.getRuntime.addShutdownHook(new Thread(() => {
+    writeItemCache()
     writeHttpCache()
   }))
 
@@ -213,7 +238,6 @@ object Main {
         val desc = inner.map("p").text
 
         val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
-
 
         itemCache.animeTitles.add(AnimeTitle(
           title,

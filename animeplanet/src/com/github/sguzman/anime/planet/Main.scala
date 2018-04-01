@@ -101,17 +101,21 @@ object Main {
   val httpCache: TrieMap[String, Array[Byte]] = identity {
     val file = new File("./http.msg")
     if (!file.exists) {
+      scribe.info("Creating http.msg file")
       file.createNewFile()
       TrieMap()
     } else {
+      scribe.info("Found http.msg file")
       val hash = MessagePack.newDefaultUnpacker(new FileInputStream(file)).httpMap
       TrieMap[String, Array[Byte]](hash.toSeq: _*)
     }
   }
 
   def writeHttpCache(): Unit = {
+    scribe.info("Writing http.msg...")
     val file = new File("./http.msg")
     MessagePack.newDefaultPacker(new FileOutputStream(file)).httpMap()
+    scribe.info("Wrote http.msg")
   }
 
   final case class AnimeTitle(
@@ -130,16 +134,20 @@ object Main {
   val itemCache: Items = identity {
     val file = new File("./items.msg")
     if (!file.exists) {
+      scribe.info("Creating items.msg file")
       file.createNewFile()
       Items(mutable.Set())
     } else {
+      scribe.info("Found items.msg file")
       MessagePack.newDefaultUnpacker(new FileInputStream(file)).items
     }
   }
 
   def writeItemCache(): Unit = {
+    scribe.info("Writing items.msg...")
     val file = new File("./items.msg")
     MessagePack.newDefaultPacker(new FileOutputStream(file)).items()
+    scribe.info("Wrote items.msg")
   }
 
   Runtime.getRuntime.addShutdownHook(new Thread(() => {

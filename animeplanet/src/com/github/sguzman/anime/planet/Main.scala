@@ -251,7 +251,7 @@ object Main {
           val `type` = inner.map("ul.entryBar > li.type").text
           val year = inner.map("ul.entryBar > li.iconYear").text
           val studio = inner.map("ul.entryBar > li:nth-child(2)").text
-          val rating = inner.map("ul.entryBar > li.iconYear > li > div.ttRating", url).text.toDouble
+          val rating = inner.map("ul.entryBar > li > div.ttRating", url).text.toDouble
           val desc = inner.map("p").text
 
           val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet

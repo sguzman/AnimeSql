@@ -7,7 +7,7 @@ object animeplanet extends ScalaModule {
   /** Non maven dependencies */
   def unmanagedClasspath = Agg(
     mill.modules.Util.download(
-      "https://github.com/sguzman/BrotliExec/releases/download/1.0.0/com.github.sguzman.brotliexec.1.0.1.jar",
+      "https://github.com/sguzman/BrotliExec/releases/download/v1.0.1/com.github.sguzman.brotli.brotliexec.1.0.1.jar",
       "com.github.sguzman.brotliexec.1.0.1.jar"
     ),
     mill.modules.Util.download(

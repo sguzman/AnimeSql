@@ -4,11 +4,10 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException
 
 import com.github.sguzman.brotli.Brotli
-import com.github.sguzman.htmlcondenser.Condenser
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
+import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
-import net.ruippeixotog.scalascraper.dsl.DSL._
 import org.msgpack.core.{MessagePack, MessagePacker, MessageUnpacker}
 import scalaj.http.Http
 
@@ -55,10 +54,31 @@ object Main {
       msg.close()
       output
     }
+
+    def items: Items = {
+      val len = msg.unpackArrayHeader
+      val titles = (1 to len).map{_ =>
+        val title = msg.unpackString
+        val img = msg.unpackString
+        val link = msg.unpackString
+        val desc = msg.unpackString
+        val studio = msg.unpackString
+        val year = msg.unpackString
+        val rating = msg.unpackDouble
+        val `type` = msg.unpackString
+        val genreLen = msg.unpackArrayHeader
+        val genres = (1 to len).map(_ => msg.unpackString).toList
+
+        AnimeTitles(title, img, link, desc, studio, year, rating, `type`, genres)
+      }.toList
+
+      val is = Items(titles)
+      msg.close()
+      is
+    }
   }
 
-  var httpCache: scala.collection.concurrent.TrieMap[String, Array[Byte]] = identity {
-    scala.collection.concurrent.TrieMap()
+  val httpCache: TrieMap[String, Array[Byte]] = identity {
     val file = new File("./http.msg")
     if (!file.exists) {
       file.createNewFile()
@@ -72,6 +92,29 @@ object Main {
   def writeHttpCache(): Unit = {
     val file = new File("./http.msg")
     MessagePack.newDefaultPacker(new FileOutputStream(file)).httpMap()
+  }
+
+  final case class AnimeTitles(
+                                title: String,
+                                img: String,
+                                link: String,
+                                desc: String,
+                                studio: String,
+                                year: String,
+                                rating: Double,
+                                `type`: String,
+                                genres: List[String]
+                              )
+  final case class Items(animeTitles: List[AnimeTitles])
+
+  val itemCache: Items = identity {
+    val file = new File("./items.msg")
+    if (!file.exists) {
+      file.createNewFile()
+      Items(List())
+    } else {
+      MessagePack.newDefaultUnpacker(new FileInputStream(file)).items
+    }
   }
 
   Runtime.getRuntime.addShutdownHook(new Thread(() => {
@@ -128,7 +171,7 @@ object Main {
       result
     } else {
       scribe.info(s"Missed http cache... calling $url")
-      val html = Condenser.condenseString(retryHttpGet(url))
+      val html = retryHttpGet(url)
       httpCache.put(url, Brotli.compress(html))
       val result = f(JsoupBrowser().parseString(html))
       scribe.info(s"After HTTP request, got key $url -> $result")
@@ -150,7 +193,7 @@ object Main {
   def main(args: Array[String]): Unit = {
     locally {
       val pages = 1 to 318
-      pages.par.flatMap{a =>
+      pages.par.foreach{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
         get(url)(a => false)(identity)((a, b) => {})(doc => "")
       }

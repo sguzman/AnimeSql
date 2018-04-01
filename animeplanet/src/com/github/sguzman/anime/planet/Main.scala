@@ -254,7 +254,6 @@ object Main {
 
         itemCache.animeTitles.add(fullTitle)
         }
-      }
     }
 
 

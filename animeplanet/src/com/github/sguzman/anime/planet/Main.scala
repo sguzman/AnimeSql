@@ -140,7 +140,7 @@ object Main {
 
   def writeItemCache(): Unit = {
     val file = new File("./items.msg")
-    MessagePack.newDefaultPacker(new FileOutputStream(file)).items
+    MessagePack.newDefaultPacker(new FileOutputStream(file)).items()
   }
 
   Runtime.getRuntime.addShutdownHook(new Thread(() => {

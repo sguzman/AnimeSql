@@ -1,19 +1,14 @@
 package com.github.sguzman.anime.planet
 
 import java.io.{File, FileInputStream, FileOutputStream}
-import java.net.SocketTimeoutException
 
-import com.github.sguzman.brotli.Brotli
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
 import org.msgpack.core.{MessagePack, MessagePacker, MessageUnpacker}
-import scalaj.http.Http
 
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.util.{Failure, Success}
 
 object Main {
   private implicit final class PackerWrap(msg: MessagePacker) {
@@ -23,10 +18,10 @@ object Main {
     }
 
     def httpMap(): Unit = {
-      msg.packMapHeader(httpCache.size)
-      httpCache.keysIterator.foreach{key =>
+      msg.packMapHeader(HUtil.httpCache.size)
+      HUtil.httpCache.keysIterator.foreach{ key =>
         msg.packString(key)
-        msg.binary(httpCache(key))
+        msg.binary(HUtil.httpCache(key))
       }
 
       msg.close()
@@ -98,26 +93,6 @@ object Main {
     }
   }
 
-  val httpCache: TrieMap[String, Array[Byte]] = identity {
-    val file = new File("./http.msg")
-    if (!file.exists) {
-      scribe.info("Creating http.msg file")
-      file.createNewFile()
-      TrieMap()
-    } else {
-      scribe.info("Found http.msg file")
-      val hash = MessagePack.newDefaultUnpacker(new FileInputStream(file)).httpMap
-      TrieMap[String, Array[Byte]](hash.toSeq: _*)
-    }
-  }
-
-  def writeHttpCache(): Unit = {
-    scribe.info("Writing http.msg...")
-    val file = new File("./http.msg")
-    MessagePack.newDefaultPacker(new FileOutputStream(file)).httpMap()
-    scribe.info("Wrote http.msg")
-  }
-
   final case class AnimeTitle(
                                 title: String,
                                 img: String,
@@ -152,25 +127,10 @@ object Main {
 
   Runtime.getRuntime.addShutdownHook(new Thread(() => {
     writeItemCache()
-    writeHttpCache()
+    HUtil.writeHttpCache()
   }))
 
-  def httpCacheQuery(url: String): String =
-    if (httpCache.contains(url)) {
-      Brotli.decompress(httpCache(url))
-    } else {
-      val body = Http(url).asString.body
-      httpCache.put(url, Brotli.compress(body))
-      body
-    }
 
-  def retryHttpGet(url: String): String = util.Try(httpCacheQuery(url)) match {
-    case Success(v) => v
-    case Failure(e) => e match {
-      case _: SocketTimeoutException => retryHttpGet(url)
-      case _ => throw new Exception(s"Url: $url; ${e.getMessage}")
-    }
-  }
 
   implicit final class DocWrap(doc: Browser#DocumentType) {
     def map(s: String, a: String = ""): Element = doc.>?>(element(s)) match {
@@ -202,7 +162,7 @@ object Main {
       scribe.info(s"Hit cache for key $url -> $value")
       value
     }
-    else if (httpCache.contains(url)) {
+    else if (HUtil.httpCache.contains(url)) {
       scribe.info(s"Missed item cache for $url but hit http cache")
       val html = retryHttpGet(url)
       val result = f(html.doc)

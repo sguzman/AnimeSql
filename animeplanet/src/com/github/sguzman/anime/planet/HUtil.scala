@@ -57,7 +57,7 @@ object HUtil {
       scribe.info(s"Hit http cache with key $url")
       Brotli.decompress(httpCache(url))
     } else {
-      HUtil
+      scribe.info(s"Miss http cache with key $url")
       val body = Http(url).asString.body
       httpCache.put(url, Brotli.compress(body))
       body

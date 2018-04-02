@@ -6,6 +6,7 @@ import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
+import org.apache.commons.lang3.StringUtils
 import org.msgpack.core.{MessagePack, MessagePacker, MessageUnpacker}
 
 import scala.collection.mutable
@@ -26,7 +27,7 @@ object Main {
       val _ = msg.packInt(user.wontWatch)
     }
 
-    def summary(a: AnimeSummary) = {
+    def summary(a: AnimeSummary): Unit = {
       msg.packString(a.title)
       msg.packString(a.img)
       msg.packString(a.link)
@@ -50,7 +51,8 @@ object Main {
         summary(a._2.summary)
         msg.packString(a._2.altTitle)
         msg.packInt(a._2.rank)
-        user(a._2.user)
+        msg.packInt(a._2.id)
+        msg.packString(a._2.url)
       }
 
       msg.close()
@@ -99,8 +101,10 @@ object Main {
         val sum = summary
         val alt = msg.unpackString
         val rank = msg.unpackInt
-        val userSts = user
-        val value = Anime(sum, alt, rank, userSts)
+        val id = msg.unpackInt
+        val url = msg.unpackString
+
+        val value = Anime(sum, alt, rank, id, url)
 
         key -> value
       }
@@ -138,7 +142,13 @@ object Main {
                           summary: AnimeSummary,
                           altTitle: String,
                           rank: Int,
-                          user: UserStats,
+                          id: Int,
+                          url: String
+                        )
+
+    final case class AnimeUsers(
+                          anime: Anime,
+                          user: UserStats
                         )
 
   final case class Items(
@@ -186,6 +196,8 @@ object Main {
 
   implicit final class StrWrap(str: String) {
     def doc = JsoupBrowser().parseString(str)
+
+    def after(sep: String) = StringUtils.substringAfter(str, sep)
   }
 
   trait Cacheable[B] {
@@ -201,14 +213,12 @@ object Main {
       value
     }
     else if (HUtil.httpCache.contains(url)) {
-      scribe.info(s"Missed item cache for $url but hit http cache")
       val html = HUtil.retryHttpGet(url)
       val result = f(html.doc)
       scribe.info(s"Got key $url -> $result")
       cache.put(url, result)
       result
     } else {
-      scribe.info(s"Missed http cache... calling $url")
       val html = HUtil.retryHttpGet(url)
       val result = f(html.doc)
       scribe.info(s"After HTTP request, got key $url -> $result")
@@ -226,6 +236,9 @@ object Main {
       override def apply(s: String): A = appl(s)
       override def put(s: String, b: A): Unit = pu(s, b)
     }) (f)
+
+  def extract[A](s: String, cache: mutable.Map[String, A])(doc: Browser#DocumentType => A): A =
+    get[A](s)(cache.contains)(cache.apply)((a,b) => { val _ = cache.put(a,b) } )(doc)
 
   def main(args: Array[String]): Unit = {
     locally {
@@ -263,6 +276,29 @@ object Main {
 
           scribe.debug(s"Adding item $fullTitle")
           itemCache.animeTitles.add(fullTitle)
+        }
+      }
+    }
+
+    locally {
+      itemCache.animeTitles.foreach{a =>
+        val url = s"https://www.anime-planet.com${a.link}"
+        val cache = itemCache.animeCache
+
+        extract(url, cache) {doc =>
+          val alt = doc.maybe("h2.aka").map(_.text).getOrElse("")
+          println(a.link)
+          val rawRank = doc.map("#siteContainer > section.pure-g.entryBar > div:nth-child(5)").text
+          val rank = if(rawRank.isEmpty) -1
+          else rawRank.after("#")
+            .replaceAll(",", "")
+            .trim
+            .toInt
+
+          val id = doc.map("""form[data-mode="anime"]""").attr("data-id").toInt
+          val u = a.link.stripPrefix("/anime/")
+
+          Anime(a, alt, rank, id, u)
         }
       }
     }

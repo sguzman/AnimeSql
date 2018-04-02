@@ -17,16 +17,6 @@ object Main {
       val _ = msg.addPayload(binary)
     }
 
-    def httpMap(): Unit = {
-      msg.packMapHeader(HUtil.httpCache.size)
-      HUtil.httpCache.keysIterator.foreach{ key =>
-        msg.packString(key)
-        msg.binary(HUtil.httpCache(key))
-      }
-
-      msg.close()
-    }
-
     def items(): Unit = {
       val list = itemCache.animeTitles.toList
       msg.packArrayHeader(list.length)
@@ -51,23 +41,6 @@ object Main {
     def binary: Array[Byte] = {
       val valueLen = msg.unpackBinaryHeader
       msg.readPayload(valueLen)
-    }
-
-    def httpMap: Map[String, Array[Byte]] = {
-      val len = msg.unpackMapHeader
-      def unpackMap(buffer: Map[String, Array[Byte]] = Map(), idx: Int = 0): Map[String, Array[Byte]] =
-        if (idx == len) {
-          buffer
-        } else {
-          val key = msg.unpackString
-          val value = msg.binary
-
-          unpackMap(buffer ++ Map(key -> value), idx + 1)
-        }
-
-      val output = unpackMap()
-      msg.close()
-      output
     }
 
     def items: Items = {
@@ -130,8 +103,6 @@ object Main {
     HUtil.writeHttpCache()
   }))
 
-
-
   implicit final class DocWrap(doc: Browser#DocumentType) {
     def map(s: String, a: String = ""): Element = doc.>?>(element(s)) match {
       case Some(v) => v
@@ -164,14 +135,14 @@ object Main {
     }
     else if (HUtil.httpCache.contains(url)) {
       scribe.info(s"Missed item cache for $url but hit http cache")
-      val html = retryHttpGet(url)
+      val html = HUtil.retryHttpGet(url)
       val result = f(html.doc)
       scribe.info(s"Got key $url -> $result")
       cache.put(url, result)
       result
     } else {
       scribe.info(s"Missed http cache... calling $url")
-      val html = retryHttpGet(url)
+      val html = HUtil.retryHttpGet(url)
       val result = f(html.doc)
       scribe.info(s"After HTTP request, got key $url -> $result")
       cache.put(url, result)
@@ -194,7 +165,7 @@ object Main {
       val pages = 1 to 318
       pages.par.foreach{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
-        val html = retryHttpGet(url)
+        val html = HUtil.retryHttpGet(url)
         val doc = html.doc
 
         doc.flatMap("div#siteContainer > ul.cardDeck > li.card").map{b =>

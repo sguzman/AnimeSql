@@ -17,20 +17,40 @@ object Main {
       val _ = msg.addPayload(binary)
     }
 
+    def user(user: UserStats): Unit = {
+      msg.packInt(user.watched)
+      msg.packInt(user.watching)
+      msg.packInt(user.wantToWatch)
+      msg.packInt(user.stalled)
+      msg.packInt(user.dropped)
+      val _ = msg.packInt(user.wontWatch)
+    }
+
+    def summary(a: AnimeSummary) = {
+      msg.packString(a.title)
+      msg.packString(a.img)
+      msg.packString(a.link)
+      msg.packString(a.desc)
+      msg.packString(a.studio)
+      msg.packString(a.year)
+      msg.packDouble(a.rating)
+      msg.packString(a.`type`)
+      msg.packArrayHeader(a.genres.size)
+      a.genres.foreach(msg.packString)
+    }
+
     def items(): Unit = {
       val list = itemCache.animeTitles.toList
       msg.packArrayHeader(list.length)
-      list.foreach {a =>
-        msg.packString(a.title)
-        msg.packString(a.img)
-        msg.packString(a.link)
-        msg.packString(a.desc)
-        msg.packString(a.studio)
-        msg.packString(a.year)
-        msg.packDouble(a.rating)
-        msg.packString(a.`type`)
-        msg.packArrayHeader(a.genres.size)
-        a.genres.foreach(msg.packString)
+      list.foreach(summary)
+
+      msg.packMapHeader(itemCache.animeCache.size)
+      itemCache.animeCache.foreach{a =>
+        msg.packString(a._1)
+        summary(a._2.summary)
+        msg.packString(a._2.altTitle)
+        msg.packInt(a._2.rank)
+        user(a._2.user)
       }
 
       msg.close()
@@ -43,30 +63,57 @@ object Main {
       msg.readPayload(valueLen)
     }
 
+    def summary: AnimeSummary = {
+      val title = msg.unpackString
+      val img = msg.unpackString
+      val link = msg.unpackString
+      val desc = msg.unpackString
+      val studio = msg.unpackString
+      val year = msg.unpackString
+      val rating = msg.unpackDouble
+      val `type` = msg.unpackString
+      val genreLen = msg.unpackArrayHeader
+      val genres = (1 to genreLen).map(_ => msg.unpackString).toSet
+
+      AnimeSummary(title, img, link, desc, studio, year, rating, `type`, genres)
+    }
+
+    def user: UserStats = {
+      UserStats(
+        msg.unpackInt,
+        msg.unpackInt,
+        msg.unpackInt,
+        msg.unpackInt,
+        msg.unpackInt,
+        msg.unpackInt
+      )
+    }
+
     def items: Items = {
       val len = msg.unpackArrayHeader
-      val titles = (1 to len).map{_ =>
-        val title = msg.unpackString
-        val img = msg.unpackString
-        val link = msg.unpackString
-        val desc = msg.unpackString
-        val studio = msg.unpackString
-        val year = msg.unpackString
-        val rating = msg.unpackDouble
-        val `type` = msg.unpackString
-        val genreLen = msg.unpackArrayHeader
-        val genres = (1 to genreLen).map(_ => msg.unpackString).toSet
+      val titles = (1 to len).map(_ => summary)
 
-        AnimeTitle(title, img, link, desc, studio, year, rating, `type`, genres)
+      val mapLen = msg.unpackMapHeader
+      val seq = (1 to mapLen).map{_ =>
+        val key = msg.unpackString
+        val sum = summary
+        val alt = msg.unpackString
+        val rank = msg.unpackInt
+        val userSts = user
+        val value = Anime(sum, alt, rank, userSts)
+
+        key -> value
       }
 
-      val is = Items(mutable.Set(titles: _*))
+      val map = mutable.HashMap[String, Anime](seq: _*)
+
+      val is = Items(mutable.Set(titles: _*), map)
       msg.close()
       is
     }
   }
 
-  final case class AnimeTitle(
+  final case class AnimeSummary(
                                 title: String,
                                 img: String,
                                 link: String,
@@ -77,14 +124,34 @@ object Main {
                                 `type`: String,
                                 genres: Set[String]
                               )
-  final case class Items(animeTitles: mutable.Set[AnimeTitle])
+
+  final case class UserStats(
+                            watched: Int,
+                            watching: Int,
+                            wantToWatch: Int,
+                            stalled: Int,
+                            dropped: Int,
+                            wontWatch: Int
+                            )
+
+  final case class Anime(
+                          summary: AnimeSummary,
+                          altTitle: String,
+                          rank: Int,
+                          user: UserStats,
+                        )
+
+  final case class Items(
+                          animeTitles: mutable.Set[AnimeSummary],
+                          animeCache: mutable.HashMap[String, Anime]
+                        )
 
   val itemCache: Items = identity {
     val file = new File("./items.msg")
     if (!file.exists) {
       scribe.info("Creating items.msg file")
       file.createNewFile()
-      Items(mutable.Set())
+      Items(mutable.Set(), mutable.HashMap())
     } else {
       scribe.info("Found items.msg file")
       MessagePack.newDefaultUnpacker(new FileInputStream(file)).items
@@ -182,7 +249,7 @@ object Main {
           val desc = inner.map("p").text
 
           val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
-          val fullTitle = AnimeTitle(
+          val fullTitle = AnimeSummary(
             title,
             img,
             link,

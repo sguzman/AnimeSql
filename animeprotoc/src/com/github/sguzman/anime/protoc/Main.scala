@@ -7,149 +7,10 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
 import org.apache.commons.lang3.StringUtils
-import org.msgpack.core.{MessagePack, MessagePacker, MessageUnpacker}
 
 import scala.collection.mutable
 
 object Main {
-  private implicit final class PackerWrap(msg: MessagePacker) {
-    def binary(binary: Array[Byte]): Unit = {
-      msg.packBinaryHeader(binary.length)
-      val _ = msg.addPayload(binary)
-    }
-
-    def user(user: UserStats): Unit = {
-      msg.packInt(user.watched)
-      msg.packInt(user.watching)
-      msg.packInt(user.wantToWatch)
-      msg.packInt(user.stalled)
-      msg.packInt(user.dropped)
-      val _ = msg.packInt(user.wontWatch)
-    }
-
-    def summary(a: AnimeSummary): Unit = {
-      msg.packString(a.title)
-      msg.packString(a.img)
-      msg.packString(a.link)
-      msg.packString(a.desc)
-      msg.packString(a.studio)
-      msg.packString(a.year)
-      msg.packDouble(a.rating)
-      msg.packString(a.`type`)
-      msg.packArrayHeader(a.genres.size)
-      a.genres.foreach(msg.packString)
-    }
-
-    def items(): Unit = {
-      val list = itemCache.animeTitles.toList
-      msg.packArrayHeader(list.length)
-      list.foreach(summary)
-
-      msg.packMapHeader(itemCache.animeCache.size)
-      itemCache.animeCache.foreach{a =>
-        msg.packString(a._1)
-        summary(a._2.summary)
-        msg.packString(a._2.altTitle)
-        msg.packInt(a._2.rank)
-        msg.packInt(a._2.id)
-        msg.packString(a._2.url)
-      }
-
-      msg.packMapHeader(itemCache.animeUsers.size)
-      itemCache.animeUsers.foreach{a =>
-        msg.packString(a._1)
-        summary(a._2.anime.summary)
-        msg.packString(a._2.anime.altTitle)
-        msg.packInt(a._2.anime.rank)
-        msg.packInt(a._2.anime.id)
-        msg.packString(a._2.anime.url)
-        user(a._2.user)
-      }
-
-      msg.close()
-    }
-  }
-
-  private implicit final class UnpackerWrap(msg: MessageUnpacker) {
-    def binary: Array[Byte] = {
-      val valueLen = msg.unpackBinaryHeader
-      msg.readPayload(valueLen)
-    }
-
-    def summary: AnimeSummary = {
-      val title = msg.unpackString
-      val img = msg.unpackString
-      val link = msg.unpackString
-      val desc = msg.unpackString
-      val studio = msg.unpackString
-      val year = msg.unpackString
-      val rating = msg.unpackDouble
-      val `type` = msg.unpackString
-      val genreLen = msg.unpackArrayHeader
-      val genres = (1 to genreLen).map(_ => msg.unpackString).toSet
-
-      AnimeSummary(title, img, link, desc, studio, year, rating, `type`, genres)
-    }
-
-    def user: UserStats = {
-      UserStats(
-        msg.unpackInt,
-        msg.unpackInt,
-        msg.unpackInt,
-        msg.unpackInt,
-        msg.unpackInt,
-        msg.unpackInt
-      )
-    }
-
-    def items: Items = {
-      val len = msg.unpackArrayHeader
-      val titles = (1 to len).map(_ => summary)
-
-      val mapLen = msg.unpackMapHeader
-      val seq = (1 to mapLen).map{_ =>
-        val key = msg.unpackString
-        val sum = summary
-        val alt = msg.unpackString
-        val rank = msg.unpackInt
-        val id = msg.unpackInt
-        val url = msg.unpackString
-
-        val value = Anime(sum, alt, rank, id, url)
-
-        key -> value
-      }
-
-      val mapLen2 = msg.unpackMapHeader
-      val seq2 = (1 to mapLen2).map{_ =>
-        val key = msg.unpackString
-        val sum = summary
-        val alt = msg.unpackString
-        val rank = msg.unpackInt
-        val id = msg.unpackInt
-        val url = msg.unpackString
-
-        val valueAnime = Anime(sum, alt, rank, id, url)
-
-        key -> AnimeUsers(valueAnime, UserStats(
-          msg.unpackInt,
-          msg.unpackInt,
-          msg.unpackInt,
-          msg.unpackInt,
-          msg.unpackInt,
-          msg.unpackInt
-        ))
-      }
-
-      val map = mutable.HashMap[String, Anime](seq: _*)
-      val map2 = mutable.HashMap[String, AnimeUsers](seq2: _*)
-
-      val is = Items(mutable.Set(titles: _*), map, map2)
-      msg.close()
-      is
-    }
-  }
-
   final case class AnimeSummary(
                                 title: String,
                                 img: String,
@@ -198,14 +59,12 @@ object Main {
       Items(mutable.Set(), mutable.HashMap(), mutable.HashMap())
     } else {
       scribe.info("Found items.msg file")
-      MessagePack.newDefaultUnpacker(new FileInputStream(file)).items
     }
   }
 
   def writeItemCache(): Unit = {
     scribe.info("Writing items.msg...")
     val file = new File("./items.msg")
-    MessagePack.newDefaultPacker(new FileOutputStream(file)).items()
     scribe.info("Wrote items.msg")
   }
 

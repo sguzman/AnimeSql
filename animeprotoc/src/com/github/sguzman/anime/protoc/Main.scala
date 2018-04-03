@@ -106,7 +106,7 @@ object Main {
     locally {
       val pages = 1 to 318
       pages.par.foreach{a =>
-        val url = s"https://www.anime-protoc.com/anime/all?page=$a"
+        val url = s"https://www.anime-planet.com/anime/all?page=$a"
         val html = HUtil.retryHttpGet(url)
         val doc = html.doc
 

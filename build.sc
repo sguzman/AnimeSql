@@ -3,7 +3,7 @@ import mill.scalalib._
 import coursier.maven.MavenRepository
 import publish._
 
-object animeplanet extends ScalaModule {
+object animeprotoc extends ScalaModule {
   /** Non maven dependencies */
   def unmanagedClasspath = Agg(
     mill.modules.Util.download(
@@ -20,7 +20,7 @@ object animeplanet extends ScalaModule {
   def mainClass = Some("com.github.sguzman.anime.planet.Main")
 
   /** Name of project */
-  def name = "AnimePlanetScraper"
+  def name = "AnimeProtocScraper"
 
   /** Organization */
   def organization = "com.github.sguzman"
@@ -95,13 +95,45 @@ object animeplanet extends ScalaModule {
     MavenRepository("https://jcenter.bintray.com")
   )
 
+  /** SPBC Executable Download */
+  def spbc = T{
+    mkdir(T.ctx().dest)
+    import ammonite.ops.ImplicitWd._
+    val wd = pwd
+    interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
+    import scalaj.http._
+
+    val exec = Http("https://github.com/scalapb/ScalaPB/releases/download/v0.7.1/scalapbc-0.7.1.zip")
+      .option(HttpOptions.followRedirects(true)).asBytes.body
+
+    write(T.ctx().dest / "spbc.zip", exec)
+    %%('unzip, T.ctx().dest / "spbc.zip", "-d", T.ctx().dest)
+
+    %%('find, T.ctx().dest)
+  }
+
+  def protoSources = T{
+    import ammonite.ops.ImplicitWd._
+    val _ = spbc()
+    val name = "proto"
+    val string = %%('find, pwd / name / "protobuf").out.lines
+    val exec = pwd / "out" / name / "spbc" / "dest" / "scalapbc-0.7.1" / "bin" / "scalapbc"
+    val protoFiles = (ls.rec! (pwd / name / "protobuf"))
+
+    %%bash(exec, s"--proto_path=${pwd / name / "protobuf"}", protoFiles.mkString(""), s"--scala_out=${pwd / name / "src"}")
+
+    (ls.rec! pwd / name / "protobuf").map(PathRef)
+  }
+
   /** Ivy dependencies */
   def ivyDeps = Agg(
     ivy"net.ruippeixotog::scala-scraper:2.1.0",
     ivy"org.scalaj::scalaj-http:2.3.0",
     ivy"org.apache.commons:commons-lang3:3.7",
     ivy"com.outr::scribe:2.3.1",
-    ivy"org.msgpack::msgpack-scala:0.8.13"
+    ivy"org.msgpack::msgpack-scala:0.8.13",
+    ivy"com.thesamet.scalapb::compilerplugin:0.7.1",
+    ivy"com.thesamet.scalapb::scalapb-runtime:0.7.1"
   )
 
   def forkArgs = Seq("-Xmx4g")

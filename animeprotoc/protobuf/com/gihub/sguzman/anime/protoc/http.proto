@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package com.github.sguzman.anime.protoc;
+
+message HttpCache {
+    map<string, bytes> cache = 1;
+}

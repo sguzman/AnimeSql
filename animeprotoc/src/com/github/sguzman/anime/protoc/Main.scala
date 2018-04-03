@@ -11,46 +11,6 @@ import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable
 
 object Main {
-  final case class AnimeSummary(
-                                title: String,
-                                img: String,
-                                link: String,
-                                desc: String,
-                                studio: String,
-                                year: String,
-                                rating: Double,
-                                `type`: String,
-                                genres: Set[String]
-                              )
-
-  final case class UserStats(
-                            watched: Int,
-                            watching: Int,
-                            wantToWatch: Int,
-                            stalled: Int,
-                            dropped: Int,
-                            wontWatch: Int
-                            )
-
-  final case class Anime(
-                          summary: AnimeSummary,
-                          altTitle: String,
-                          rank: Int,
-                          id: Int,
-                          url: String
-                        )
-
-    final case class AnimeUsers(
-                          anime: Anime,
-                          user: UserStats
-                        )
-
-  final case class Items(
-                          animeTitles: mutable.Set[AnimeSummary],
-                          animeCache: mutable.HashMap[String, Anime],
-                          animeUsers: mutable.HashMap[String, AnimeUsers]
-                        )
-
   val itemCache: Items = identity {
     val file = new File("./items.msg")
     if (!file.exists) {

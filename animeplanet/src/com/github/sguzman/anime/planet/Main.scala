@@ -342,12 +342,12 @@ object Main {
         val cache = itemCache.animeUsers
 
         extract(url, cache) {doc =>
-          val watched = doc.map("ul.statList > li.status1 > span.slCount").text.replaceAll(",","").toInt
-          val watching = doc.map("ul.statList > li.status2 > span.slCount").text.replaceAll(",","").toInt
-          val wantToWatch = doc.map("ul.statList > li.status3 > span.slCount").text.replaceAll(",","").toInt
-          val stalled = doc.map("ul.statList > li.status4 > span.slCount").text.replaceAll(",","").toInt
-          val dropped = doc.map("ul.statList > li.status5 > span.slCount").text.replaceAll(",","").toInt
-          val wontWatch = doc.map("ul.statList > li.status6 > span.slCount").text.replaceAll(",","").toInt
+          val watched = doc.map("ul.statList > li.status1 > a > span.slCount").text.replaceAll(",","").toInt
+          val watching = doc.map("ul.statList > li.status2 > a > span.slCount").text.replaceAll(",","").toInt
+          val wantToWatch = doc.map("ul.statList > li.status3 > a > span.slCount").text.replaceAll(",","").toInt
+          val stalled = doc.map("ul.statList > li.status4 > a > span.slCount").text.replaceAll(",","").toInt
+          val dropped = doc.map("ul.statList > li.status5 > a > span.slCount").text.replaceAll(",","").toInt
+          val wontWatch = doc.map("ul.statList > li.status6 > a > span.slCount").text.replaceAll(",","").toInt
 
           AnimeUsers(a._2, UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch))
         }

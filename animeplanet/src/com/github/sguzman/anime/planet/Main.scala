@@ -229,8 +229,8 @@ object Main {
 
   implicit final class StrWrap(str: String) {
     def doc = JsoupBrowser().parseString(str)
-
     def after(sep: String) = StringUtils.substringAfter(str, sep)
+    def afterLast(sep: String) = StringUtils.substringAfterLast(str, sep)
   }
 
   trait Cacheable[B] {
@@ -338,7 +338,7 @@ object Main {
 
     locally (
       itemCache.animeCache.par.foreach{a =>
-        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.stripPrefix("/").after("/")}"
+        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
         val cache = itemCache.animeUsers
 
         extract(url, cache) {doc =>

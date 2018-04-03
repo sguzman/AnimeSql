@@ -2,6 +2,8 @@ import mill._
 import mill.scalalib._
 import coursier.maven.MavenRepository
 import publish._
+import ammonite.ops._
+import ammonite.ops.ImplicitWd._
 
 object animeprotoc extends ScalaModule {
   /** Non maven dependencies */
@@ -98,7 +100,6 @@ object animeprotoc extends ScalaModule {
   /** SPBC Executable Download */
   def spbc = T{
     mkdir(T.ctx().dest)
-    import ammonite.ops.ImplicitWd._
     val wd = pwd
     interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
     import scalaj.http._
@@ -112,17 +113,15 @@ object animeprotoc extends ScalaModule {
     %%('find, T.ctx().dest)
   }
 
-  def protoSources = T{
-    import ammonite.ops.ImplicitWd._
+  def protoc = T{
     val _ = spbc()
-    val name = "proto"
-    val string = %%('find, pwd / name / "protobuf").out.lines
+    val name = "animeprotoc"
     val exec = pwd / "out" / name / "spbc" / "dest" / "scalapbc-0.7.1" / "bin" / "scalapbc"
-    val protoFiles = (ls.rec! (pwd / name / "protobuf"))
+    val protoFiles = %%('gfind, pwd / name / "protobuf", "-type", "f", "-name", "*.proto").out.lines
 
-    %%bash(exec, s"--proto_path=${pwd / name / "protobuf"}", protoFiles.mkString(""), s"--scala_out=${pwd / name / "src"}")
+    %%bash(exec, s"--proto_path=${pwd / name / "protobuf"}", protoFiles.mkString(" "), s"--scala_out=${pwd / name / "src"}")
 
-    (ls.rec! pwd / name / "protobuf").map(PathRef)
+    ls.rec(pwd / name / "protobuf").map(PathRef(_))
   }
 
   /** Ivy dependencies */
@@ -131,7 +130,6 @@ object animeprotoc extends ScalaModule {
     ivy"org.scalaj::scalaj-http:2.3.0",
     ivy"org.apache.commons:commons-lang3:3.7",
     ivy"com.outr::scribe:2.3.1",
-    ivy"org.msgpack::msgpack-scala:0.8.13",
     ivy"com.thesamet.scalapb::compilerplugin:0.7.1",
     ivy"com.thesamet.scalapb::scalapb-runtime:0.7.1"
   )

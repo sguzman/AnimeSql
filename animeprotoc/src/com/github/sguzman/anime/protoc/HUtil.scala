@@ -4,6 +4,7 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException
 
 import com.github.sguzman.brotli.Brotli
+import com.google.protobuf.ByteString
 import scalaj.http.Http
 
 import scala.collection.concurrent.TrieMap
@@ -37,15 +38,21 @@ object HUtil {
       TrieMap()
     } else {
       scribe.info("Found http.msg file")
-      val hash = MessagePack.newDefaultUnpacker(new FileInputStream(file)).httpMap
-      TrieMap[String, Array[Byte]](hash.toSeq: _*)
+      val input = new FileInputStream(file)
+      val hash = http.HttpCache.parseFrom(input)
+      input.close()
+
+      TrieMap[String, Array[Byte]](hash.cache.toSeq.map(a => (a._1, a._2.toByteArray)): _*)
     }
   }
 
   def writeHttpCache(): Unit = {
     scribe.info("Writing http.msg...")
     val file = new File("./http.msg")
-    MessagePack.newDefaultPacker(new FileOutputStream(file)).httpMap()
+    val output = new FileOutputStream(file)
+    http.HttpCache(httpCache.toSeq.map(a => (a._1, ByteString.copyFrom(a._2))).toMap).writeTo(output)
+    output.close()
+
     scribe.info("Wrote http.msg")
   }
 }

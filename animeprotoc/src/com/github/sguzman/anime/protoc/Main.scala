@@ -132,7 +132,7 @@ object Main {
 
     locally {
       itemCache.sums.par.foreach{a =>
-        val url = s"https://www.anime-protoc.com${a.link}"
+        val url = s"https://www.anime-planet.com${a.link}"
 
         get(url)(itemCache.cache.contains)(itemCache.cache.apply)((a, b) => itemCache = itemCache.addCache((a, b))) {doc =>
           val alt = doc.maybe("h2.aka").map(_.text).getOrElse("")
@@ -154,7 +154,7 @@ object Main {
 
     locally (
       itemCache.anime.par.foreach{a =>
-        val url = s"https://www.anime-protoc.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.getAnime.id}&url=${a._1.afterLast("/")}"
+        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.getAnime.id}&url=${a._1.afterLast("/")}"
 
         get(url)(itemCache.anime.contains)(itemCache.anime.apply)((a, b) => itemCache = itemCache.addAnime((a, b))) {doc =>
           val watched = doc.maybe("ul.statList > li.status1 > a > span.slCount").map(_.text.replaceAll(",","").toInt).getOrElse(0)

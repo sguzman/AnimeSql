@@ -153,7 +153,7 @@ object Main {
     }
 
     locally (
-      itemCache.anime.par.foreach{a =>
+      itemCache.cache.par.foreach{a =>
         val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.getAnime.id}&url=${a._1.afterLast("/")}"
 
         get(url)(itemCache.anime.contains)(itemCache.anime.apply)((a, b) => itemCache = itemCache.addAnime((a, b))) {doc =>

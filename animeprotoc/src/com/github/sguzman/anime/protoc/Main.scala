@@ -2,7 +2,7 @@ package com.github.sguzman.anime.protoc
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
-import com.github.sguzman.anime.protoc.items.Items
+import com.github.sguzman.anime.protoc.items._
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
@@ -110,7 +110,7 @@ object Main {
         val html = HUtil.retryHttpGet(url)
         val doc = html.doc
 
-        doc.flatMap("div#siteContainer > ul.cardDeck > li.card").map{b =>
+        doc.flatMap("div#siteContainer > ul.cardDeck > li.card").foreach{ b =>
           val doc2 = b.innerHtml.doc
           val img = doc2.map("a[title] > div.crop > img[src]", url).attr("src")
           val title = doc2.map("a[title] > h4").text
@@ -123,31 +123,18 @@ object Main {
           val rating = inner.maybe("ul.entryBar > li > div.ttRating").map(_.text.toDouble).getOrElse(-1.0d)
           val desc = inner.map("p").text
 
-          val genres = inner.flatMap("div.tags > ul > li").map(_.text).toSet
-          val fullTitle = AnimeSummary(
-            title,
-            img,
-            link,
-            desc,
-            studio,
-            year,
-            rating,
-            `type`,
-            genres
-          )
-
-          scribe.debug(s"Adding item $fullTitle")
-          itemCache.animeTitles.add(fullTitle)
+          val genres = inner.flatMap("div.tags > ul > li").map(_.text)
+          val fullTitle = AnimeSummary(title, img, link, desc, studio, year, rating, `type`, genres)
+          itemCache = itemCache.addSums(fullTitle)
         }
       }
     }
 
     locally {
-      itemCache.animeTitles.par.foreach{a =>
+      itemCache.sums.par.foreach{a =>
         val url = s"https://www.anime-protoc.com${a.link}"
-        val cache = itemCache.animeCache
 
-        extract(url, cache) {doc =>
+        get(url)(itemCache.cache.contains)(itemCache.cache.apply)((a, b) => itemCache = itemCache.addCache((a, b))) {doc =>
           val alt = doc.maybe("h2.aka").map(_.text).getOrElse("")
           println(a.link)
           val rawRank = doc.map("#siteContainer > section.pure-g.entryBar > div:nth-child(5)").text
@@ -166,11 +153,10 @@ object Main {
     }
 
     locally (
-      itemCache.animeCache.par.foreach{a =>
-        val url = s"https://www.anime-protoc.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
-        val cache = itemCache.animeUsers
+      itemCache.anime.par.foreach{a =>
+        val url = s"https://www.anime-protoc.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.getAnime.id}&url=${a._1.afterLast("/")}"
 
-        extract(url, cache) {doc =>
+        get(url)(itemCache.anime.contains)(itemCache.anime.apply)((a, b) => itemCache = itemCache.addAnime((a, b))) {doc =>
           val watched = doc.maybe("ul.statList > li.status1 > a > span.slCount").map(_.text.replaceAll(",","").toInt).getOrElse(0)
           val watching = doc.map("ul.statList > li.status2 > a > span.slCount").text.replaceAll(",","").toInt
           val wantToWatch = doc.map("ul.statList > li.status3 > a > span.slCount").text.replaceAll(",","").toInt
@@ -178,7 +164,7 @@ object Main {
           val dropped = doc.map("ul.statList > li.status5 > a > span.slCount").text.replaceAll(",","").toInt
           val wontWatch = doc.map("ul.statList > li.status6 > a > span.slCount").text.replaceAll(",","").toInt
 
-          AnimeUsers(a._2, UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch))
+          AnimeUser(Some(a._2.getAnime), Some(UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch)))
         }
       }
     )

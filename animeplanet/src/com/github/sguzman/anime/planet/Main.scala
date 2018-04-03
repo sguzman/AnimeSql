@@ -343,7 +343,7 @@ object Main {
         val cache = itemCache.animeUsers
 
         extract(url, cache) {doc =>
-          val watched = doc.map("ul.statList > li.status1 > a > span.slCount").text.replaceAll(",","").toInt
+          val watched = doc.maybe("ul.statList > li.status1 > a > span.slCount").map(_.text.replaceAll(",","").toInt).getOrElse(0)
           val watching = doc.map("ul.statList > li.status2 > a > span.slCount").text.replaceAll(",","").toInt
           val wantToWatch = doc.map("ul.statList > li.status3 > a > span.slCount").text.replaceAll(",","").toInt
           val stalled = doc.map("ul.statList > li.status4 > a > span.slCount").text.replaceAll(",","").toInt

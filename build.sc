@@ -11,10 +11,6 @@ object animeprotoc extends ScalaModule {
     mill.modules.Util.download(
       "https://github.com/sguzman/BrotliExec/releases/download/v1.0.1/com.github.sguzman.brotli.brotliexec.1.0.1.jar",
       "com.github.sguzman.brotliexec.1.0.1.jar"
-    ),
-    mill.modules.Util.download(
-      "https://github.com/sguzman/HtmlCondenser/releases/download/v1.0.0/com.github.sguzman.htmlcondenser.1.0.0.jar",
-      "com.github.sguzman.htmlcondenser.1.0.0.jar"
     )
   )
 

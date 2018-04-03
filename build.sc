@@ -19,7 +19,7 @@ object animeprotoc extends ScalaModule {
   )
 
   /** Main class */
-  def mainClass = Some("com.github.sguzman.anime.planet.Main")
+  def mainClass = Some("com.github.sguzman.anime.protoc.Main")
 
   /** Name of project */
   def name = "AnimeProtocScraper"

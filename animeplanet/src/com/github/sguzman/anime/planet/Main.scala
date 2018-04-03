@@ -281,7 +281,7 @@ object Main {
     }
 
     locally {
-      itemCache.animeTitles.foreach{a =>
+      itemCacheanimeTitles.par.foreach{a =>
         val url = s"https://www.anime-planet.com${a.link}"
         val cache = itemCache.animeCache
 

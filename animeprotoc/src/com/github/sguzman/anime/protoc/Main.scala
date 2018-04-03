@@ -142,12 +142,12 @@ object Main {
           else rawRank.after("#")
             .replaceAll(",", "")
             .trim
-            .toInt
+            .toLong
 
           val id = doc.map("""form[data-mode="anime"]""").attr("data-id").toInt
           val u = a.link.stripPrefix("/anime/")
 
-          Anime(a, alt, rank, id, u)
+          Anime(Some(a), alt, rank, id, u)
         }
       }
     }

@@ -119,7 +119,9 @@ object animeprotoc extends ScalaModule {
     val exec = pwd / "out" / name / "spbc" / "dest" / "scalapbc-0.7.1" / "bin" / "scalapbc"
     val protoFiles = %%('gfind, pwd / name / "protobuf", "-type", "f", "-name", "*.proto").out.lines
 
-    %%bash(exec, s"--proto_path=${pwd / name / "protobuf"}", protoFiles.mkString(" "), s"--scala_out=${pwd / name / "src"}")
+    protoFiles.foreach{a =>
+      %%bash(exec, s"--proto_path=${pwd / name / "protobuf"}", a, s"--scala_out=${pwd / name / "src"}")
+    }
 
     ls.rec(pwd / name / "protobuf").map(PathRef(_))
   }

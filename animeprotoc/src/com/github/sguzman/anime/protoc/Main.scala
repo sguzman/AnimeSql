@@ -154,7 +154,7 @@ object Main {
 
     locally (
       itemCache.cache.par.foreach{a =>
-        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.getAnime.id}&url=${a._1.afterLast("/")}"
+        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
 
         get(url)(itemCache.anime.contains)(itemCache.anime.apply)((a, b) => itemCache = itemCache.addAnime((a, b))) {doc =>
           val watched = doc.maybe("ul.statList > li.status1 > a > span.slCount").map(_.text.replaceAll(",","").toInt).getOrElse(0)
@@ -164,7 +164,7 @@ object Main {
           val dropped = doc.map("ul.statList > li.status5 > a > span.slCount").text.replaceAll(",","").toInt
           val wontWatch = doc.map("ul.statList > li.status6 > a > span.slCount").text.replaceAll(",","").toInt
 
-          AnimeUser(Some(a._2.getAnime), Some(UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch)))
+          AnimeUser(Some(a._2), Some(UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch)))
         }
       }
     )

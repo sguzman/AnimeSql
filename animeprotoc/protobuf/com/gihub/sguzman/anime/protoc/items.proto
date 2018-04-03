@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package com.github.sguzman.anime.protoc;
+
+
+message AnimeSummary {
+    string title = 1;
+    string img = 2;
+    string link = 3;
+    string desc = 4;
+    string studio = 5;
+    string year = 6;
+    double rating = 7;
+    string showType = 8;
+    repeated string genres = 9;
+}
+
+message Anime {
+    AnimeSummary summary = 1;
+    string alt = 2;
+    uint32 rank = 3;
+    uint64 id = 4;
+    string url = 5;
+}
+
+message UserStats {
+    uint32 watched = 1;
+    uint32 watching = 2;
+    uint32 wantToWatch = 3;
+    uint32 stalled = 4;
+    uint32 dropped = 5;
+    uint32 wontWatch = 6;
+}
+
+message AnimeUser {
+    Anime anime = 1;
+    UserStats user = 2;
+}
+
+message Items {
+    repeated AnimeSummary sums = 1;
+    map<string ,Anime> cache = 2;
+    map<string ,AnimeUser> anime = 3;
+}

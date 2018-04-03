@@ -2,6 +2,7 @@ package com.github.sguzman.anime.protoc
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
+import com.github.sguzman.anime.protoc.items.Items
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
@@ -11,20 +12,28 @@ import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable
 
 object Main {
-  val itemCache: Items = identity {
+  var itemCache: Items = identity {
     val file = new File("./items.msg")
     if (!file.exists) {
       scribe.info("Creating items.msg file")
       file.createNewFile()
-      Items(mutable.Set(), mutable.HashMap(), mutable.HashMap())
+      Items(Seq(), Map(), Map())
     } else {
       scribe.info("Found items.msg file")
+      val input = new FileInputStream(file)
+      val out = Items.parseFrom(input)
+      input.close()
+      out
     }
   }
 
   def writeItemCache(): Unit = {
     scribe.info("Writing items.msg...")
     val file = new File("./items.msg")
+    val output = new FileOutputStream(file)
+    itemCache.writeTo(output)
+    output.close()
+
     scribe.info("Wrote items.msg")
   }
 

@@ -1,4 +1,4 @@
-package com.github.sguzman.anime.planet
+package com.github.sguzman.anime.protoc
 
 import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException

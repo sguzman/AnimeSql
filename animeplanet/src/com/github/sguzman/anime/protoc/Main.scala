@@ -1,4 +1,4 @@
-package com.github.sguzman.anime.planet
+package com.github.sguzman.anime.protoc
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
@@ -278,7 +278,7 @@ object Main {
     locally {
       val pages = 1 to 318
       pages.par.foreach{a =>
-        val url = s"https://www.anime-planet.com/anime/all?page=$a"
+        val url = s"https://www.anime-protoc.com/anime/all?page=$a"
         val html = HUtil.retryHttpGet(url)
         val doc = html.doc
 
@@ -316,7 +316,7 @@ object Main {
 
     locally {
       itemCache.animeTitles.par.foreach{a =>
-        val url = s"https://www.anime-planet.com${a.link}"
+        val url = s"https://www.anime-protoc.com${a.link}"
         val cache = itemCache.animeCache
 
         extract(url, cache) {doc =>
@@ -339,7 +339,7 @@ object Main {
 
     locally (
       itemCache.animeCache.par.foreach{a =>
-        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
+        val url = s"https://www.anime-protoc.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
         val cache = itemCache.animeUsers
 
         extract(url, cache) {doc =>

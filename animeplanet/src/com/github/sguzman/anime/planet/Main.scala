@@ -55,6 +55,16 @@ object Main {
         msg.packString(a._2.url)
       }
 
+      itemCache.animeUsers.foreach{a =>
+        msg.packString(a._1)
+        summary(a._2.anime.summary)
+        msg.packString(a._2.anime.altTitle)
+        msg.packInt(a._2.anime.rank)
+        msg.packInt(a._2.anime.id)
+        msg.packString(a._2.anime.url)
+        user(a._2.user)
+      }
+
       msg.close()
     }
   }
@@ -109,9 +119,31 @@ object Main {
         key -> value
       }
 
-      val map = mutable.HashMap[String, Anime](seq: _*)
+      val mapLen2 = msg.unpackMapHeader
+      val seq2 = (1 to mapLen2).map{_ =>
+        val key = msg.unpackString
+        val sum = summary
+        val alt = msg.unpackString
+        val rank = msg.unpackInt
+        val id = msg.unpackInt
+        val url = msg.unpackString
 
-      val is = Items(mutable.Set(titles: _*), map)
+        val valueAnime = Anime(sum, alt, rank, id, url)
+
+        key -> AnimeUsers(valueAnime, UserStats(
+          msg.unpackInt,
+          msg.unpackInt,
+          msg.unpackInt,
+          msg.unpackInt,
+          msg.unpackInt,
+          msg.unpackInt
+        ))
+      }
+
+      val map = mutable.HashMap[String, Anime](seq: _*)
+      val map2 = mutable.HashMap[String, AnimeUsers](seq2: _*)
+
+      val is = Items(mutable.Set(titles: _*), map, map2)
       msg.close()
       is
     }
@@ -153,7 +185,8 @@ object Main {
 
   final case class Items(
                           animeTitles: mutable.Set[AnimeSummary],
-                          animeCache: mutable.HashMap[String, Anime]
+                          animeCache: mutable.HashMap[String, Anime],
+                          animeUsers: mutable.HashMap[String, AnimeUsers]
                         )
 
   val itemCache: Items = identity {
@@ -161,7 +194,7 @@ object Main {
     if (!file.exists) {
       scribe.info("Creating items.msg file")
       file.createNewFile()
-      Items(mutable.Set(), mutable.HashMap())
+      Items(mutable.Set(), mutable.HashMap(), mutable.HashMap())
     } else {
       scribe.info("Found items.msg file")
       MessagePack.newDefaultUnpacker(new FileInputStream(file)).items
@@ -302,6 +335,24 @@ object Main {
         }
       }
     }
+
+    locally (
+      itemCache.animeCache.par.foreach{a =>
+        val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.stripPrefix("/").after("/")}"
+        val cache = itemCache.animeUsers
+
+        extract(url, cache) {doc =>
+          val watched = doc.map("ul.statList > li.status1 > span.slCount").text.replaceAll(",","").toInt
+          val watching = doc.map("ul.statList > li.status2 > span.slCount").text.replaceAll(",","").toInt
+          val wantToWatch = doc.map("ul.statList > li.status3 > span.slCount").text.replaceAll(",","").toInt
+          val stalled = doc.map("ul.statList > li.status4 > span.slCount").text.replaceAll(",","").toInt
+          val dropped = doc.map("ul.statList > li.status5 > span.slCount").text.replaceAll(",","").toInt
+          val wontWatch = doc.map("ul.statList > li.status6 > span.slCount").text.replaceAll(",","").toInt
+
+          AnimeUsers(a._2, UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch))
+        }
+      }
+    )
 
     scribe.info("done")
   }

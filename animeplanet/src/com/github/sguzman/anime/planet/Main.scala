@@ -55,6 +55,7 @@ object Main {
         msg.packString(a._2.url)
       }
 
+      msg.packMapHeader(itemCache.animeUsers.size)
       itemCache.animeUsers.foreach{a =>
         msg.packString(a._1)
         summary(a._2.anime.summary)

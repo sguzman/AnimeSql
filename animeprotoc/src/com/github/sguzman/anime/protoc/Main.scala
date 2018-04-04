@@ -1,10 +1,8 @@
 package com.github.sguzman.anime.protoc
 
-import java.io.{File, FileOutputStream}
-import java.nio.file.{Files, Paths}
+import java.io.{File, FileInputStream, FileOutputStream}
 
 import com.github.sguzman.anime.protoc.items._
-import com.github.sguzman.brotli.Brotli
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
@@ -22,9 +20,10 @@ object Main {
       Items(Seq(), Map(), Map())
     } else {
       scribe.info("Found items.msg file")
-      val input = Files.readAllBytes(Paths.get("./items.msg"))
-      val protoReady = Brotli.decompress(input)
-      Items.parseFrom(protoReady.getBytes)
+      val input = new FileInputStream(file)
+      val out = Items.parseFrom(input)
+      input.close()
+      out
     }
   }
 
@@ -32,10 +31,7 @@ object Main {
     scribe.info("Writing items.msg...")
     val file = new File("./items.msg")
     val output = new FileOutputStream(file)
-    val str = itemCache.toByteArray.map(_.toChar).mkString
-    val out = Brotli.compress(str)
-    output.write(out)
-
+    itemCache.writeTo(output)
     output.close()
 
     scribe.info("Wrote items.msg")

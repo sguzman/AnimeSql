@@ -174,7 +174,9 @@ object Main {
       val file = new File("./store.msg")
       val output = new FileOutputStream(file)
 
+      scribe.info("Wrinting store.msg")
       store.StoreCache(items).writeTo(output)
+      scribe.info("Wrote store.msg")
       output.close()
     }
 

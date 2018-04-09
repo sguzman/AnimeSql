@@ -2,11 +2,13 @@ package com.github.sguzman.anime.sql
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
-import com.github.sguzman.anime.sql.items._
+import com.github.sguzman.anime.protoc.store
+import com.github.sguzman.anime.protoc.items._
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
-import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
-import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
+import net.ruippeixotog.scalascraper.dsl.DSL._
+import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
+import net.ruippeixotog.scalascraper.scraper.ContentExtractors.element
 import org.apache.commons.lang3.StringUtils
 
 import scala.collection.mutable

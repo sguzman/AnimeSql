@@ -111,15 +111,15 @@ object animesql extends ScalaModule {
 
   def protoc = T{
     val _ = spbc()
-    val name = "animeprotoc"
+    val name = "animesql"
     val exec = pwd / "out" / name / "spbc" / "dest" / "scalapbc-0.7.1" / "bin" / "scalapbc"
-    val protoFiles = %%('gfind, pwd / name / "protobuf", "-type", "f", "-name", "*.proto").out.lines
+    val protoFiles = %%('gfind, pwd / name / "proto", "-type", "f", "-name", "*.proto").out.lines
 
     protoFiles.foreach{a =>
-      %%bash(exec, s"--proto_path=${pwd / name / "protobuf"}", a, s"--scala_out=${pwd / name / "src"}")
+      %%bash(exec, s"--proto_path=${pwd / name / "proto"}", a, s"--scala_out=${pwd / name / "src"}")
     }
 
-    ls.rec(pwd / name / "protobuf").map(PathRef(_))
+    ls.rec(pwd / name / "proto").map(PathRef(_))
   }
 
   /** Ivy dependencies */

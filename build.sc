@@ -5,7 +5,7 @@ import publish._
 import ammonite.ops._
 import ammonite.ops.ImplicitWd._
 
-object animeprotoc extends ScalaModule {
+object animesql extends ScalaModule {
   /** Non maven dependencies */
   def unmanagedClasspath = Agg(
     mill.modules.Util.download(
@@ -15,10 +15,10 @@ object animeprotoc extends ScalaModule {
   )
 
   /** Main class */
-  def mainClass = Some("com.github.sguzman.anime.protoc.Main")
+  def mainClass = Some("com.github.sguzman.anime.sql.Main")
 
   /** Name of project */
-  def name = "AnimeProtocScraper"
+  def name = "AnimeScraperSql"
 
   /** Organization */
   def organization = "com.github.sguzman"

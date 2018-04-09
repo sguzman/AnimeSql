@@ -1,4 +1,4 @@
-package com.github.sguzman.anime.protoc
+package com.github.sguzman.anime.sql
 
 import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException

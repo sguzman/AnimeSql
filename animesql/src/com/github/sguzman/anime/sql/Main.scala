@@ -1,8 +1,8 @@
-package com.github.sguzman.anime.protoc
+package com.github.sguzman.anime.sql
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
-import com.github.sguzman.anime.protoc.items._
+import com.github.sguzman.anime.sql.items._
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element

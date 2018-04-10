@@ -214,7 +214,7 @@ object Main {
       }
       val list = TableQuery[List]
 
-      val db = Database.forConfig("posgres")
+      val db = Database.forURL("jdbc:postgresql://localhost:5432/postgres", driver = "org.postgresql.Driver", user = "alice", password = "pass")
 
       locally {
         val tables = List(genres, summary, list)

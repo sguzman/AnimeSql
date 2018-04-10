@@ -106,12 +106,12 @@ object Main {
   def main(args: Array[String]): Unit = {
     locally {
       val pages = 1 to 318
-      pages.par.foreach{a =>
+      val shows = pages.par.flatMap{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
         val html = HUtil.retryHttpGet(url)
         val doc = html.doc
 
-        doc.flatMap("div#siteContainer > ul.cardDeck > li.card").foreach{ b =>
+        doc.flatMap("div#siteContainer > ul.cardDeck > li.card").map{ b =>
           val doc2 = b.innerHtml.doc
           val img = doc2.map("a[title] > div.crop > img[src]", url).attr("src")
           val title = doc2.map("a[title] > h4").text
@@ -126,16 +126,17 @@ object Main {
 
           val genres = inner.flatMap("div.tags > ul > li").map(_.text)
           val fullTitle = AnimeSummary(title, img, link, desc, studio, year, rating, `type`, genres)
-          itemCache = itemCache.addSums(fullTitle)
+          fullTitle
         }
-      }
+      }.toList
+      itemCache = itemCache.addAllSums(shows)
     }
 
     locally {
-      itemCache.sums.par.foreach{a =>
+      val animes = itemCache.sums.par.map{a =>
         val url = s"https://www.anime-planet.com${a.link}"
 
-        get(url)(itemCache.cache.contains)(itemCache.cache.apply)((a, b) => itemCache = itemCache.addCache((a, b))) {doc =>
+        val anime = get(url)(itemCache.cache.contains)(itemCache.cache.apply)((_, _) => {}) {doc =>
           val alt = doc.maybe("h2.aka").map(_.text).getOrElse("")
           println(a.link)
           val rawRank = doc.map("#siteContainer > section.pure-g.entryBar > div:nth-child(5)").text
@@ -150,14 +151,18 @@ object Main {
 
           Anime(Some(a), alt, rank, id, u)
         }
-      }
+
+        url -> anime
+      }.toList
+
+      itemCache = itemCache.addAllCache(animes)
     }
 
-    locally (
-      itemCache.cache.par.foreach{a =>
+    locally {
+      val users = itemCache.cache.par.map{a =>
         val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
 
-        get(url)(itemCache.anime.contains)(itemCache.anime.apply)((a, b) => itemCache = itemCache.addAnime((a, b))) {doc =>
+        val user = get(url)(itemCache.anime.contains)(itemCache.anime.apply)((_, _) => {}) {doc =>
           val watched = doc.maybe("ul.statList > li.status1 > a > span.slCount").map(_.text.replaceAll(",","").toInt).getOrElse(0)
           val watching = doc.map("ul.statList > li.status2 > a > span.slCount").text.replaceAll(",","").toInt
           val wantToWatch = doc.map("ul.statList > li.status3 > a > span.slCount").text.replaceAll(",","").toInt
@@ -167,15 +172,11 @@ object Main {
 
           AnimeUser(Some(a._2), Some(UserStats(watched, watching, wantToWatch, stalled, dropped, wontWatch)))
         }
-      }
-    )
 
-    locally {
-      val genres = itemCache.anime.values.flatMap(_.getAnime.getSummary.genres).map(_.toLowerCase).toSeq
-      val set = Set(genres: _*)
-      val ls = set.map(_.length).toSeq.sorted
-      set  foreach println
-      println(ls)
+        url -> user
+      }.toList
+
+      itemCache = itemCache.addAllAnime(users)
     }
 
     scribe.info("done")

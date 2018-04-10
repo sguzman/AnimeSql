@@ -194,7 +194,7 @@ object Main {
 
       final class Summary(tag: Tag) extends Table[(Int, String, String, String, String, String, Double, String)](tag, "summary") {
         def id = column[Int]("summary_id", O.Unique, O.PrimaryKey, O.AutoInc)
-        def title = column[String]("title", O.Unique)
+        def title = column[String]("title")
         def img = column[String]("img")
         def link = column[String]("link", O.Unique)
         def desc = column[String]("desc")

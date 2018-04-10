@@ -16,7 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object Main {
   var itemCache: Items = identity {

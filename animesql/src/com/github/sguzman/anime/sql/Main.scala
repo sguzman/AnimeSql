@@ -202,7 +202,7 @@ object Main {
         def rating = column[Double]("rating")
         def showType = column[String]("showType")
 
-        def * = (id, title, img, lin, desc, studio, rating, showType)
+        def * = (id, title, img, link, desc, studio, rating, showType)
       }
       val summary = TableQuery[Summary]
 

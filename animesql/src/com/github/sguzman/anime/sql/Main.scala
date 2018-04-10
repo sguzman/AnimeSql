@@ -2,7 +2,6 @@ package com.github.sguzman.anime.sql
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
-import com.github.sguzman.anime.protoc.store
 import com.github.sguzman.anime.protoc.items._
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
 import net.ruippeixotog.scalascraper.model.Element
@@ -170,6 +169,14 @@ object Main {
         }
       }
     )
+
+    locally {
+      val genres = itemCache.anime.values.flatMap(_.getAnime.getSummary.genres).map(_.toLowerCase).toSeq
+      val set = Set(genres: _*)
+      val ls = set.map(_.length).toSeq.sorted
+      set  foreach println
+      println(ls)
+    }
 
     scribe.info("done")
   }

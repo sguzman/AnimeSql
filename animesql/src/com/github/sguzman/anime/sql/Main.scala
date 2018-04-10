@@ -206,23 +206,49 @@ object Main {
       }
       val summary = TableQuery[Summary]
 
+      final class List(tag: Tag) extends Table[(Int, Int, Int)](tag, "list") {
+        def id = column[Int]("id", O.Unique, O.PrimaryKey, O.AutoInc)
+        def sumId = column[Int]("sum_id")
+        def genId = column[Int]("gen_id")
+
+        def * = (id, sumId, genId)
+      }
+      val list = TableQuery[List]
+
       val db = Database.forURL("jdbc:mysql://localhost/fun?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", driver = "com.mysql.cj.jdbc.Driver", user = "root")
 
-      val genresList = db.run(genres.result.map(_.map(a => a._2))).v.toSet
-      val genreList = itemCache.cache.values.flatMap(_.getSummary.genres).toSet
+      locally {
+        val genresList = db.run(genres.result.map(_.map(a => a._2))).v.toSet
+        val genreList = itemCache.cache.values.flatMap(_.getSummary.genres).toSet
 
-      val diff = genreList.diff(genresList)
-      db.run(DBIO.seq(
-        genres ++= diff.map((0, _))
-      )).v
+        val diff = genreList.diff(genresList)
+        db.run(DBIO.seq(
+          genres ++= diff.map((0, _))
+        )).v
+      }
 
-      val summaries = db.run(summary.result.map(_.map(a => (0, a._2, a._3, a._4, a._5, a._6, a._7, a._8)))).v.toSet
-      val summaries2 = itemCache.cache.values.map(_.getSummary).map(a => (0, a.title, a.img, a.link, a.desc, a.studio, a.rating, a.showType)).toSet
-      val diff2 = summaries2.diff(summaries)
+      locally {
+        val summaries = db.run(summary.result.map(_.map(a => (0, a._2, a._3, a._4, a._5, a._6, a._7, a._8)))).v.toSet
+        val summaries2 = itemCache.cache.values.map(_.getSummary).map(a => (0, a.title, a.img, a.link, a.desc, a.studio, a.rating, a.showType)).toSet
+        val diff = summaries2.diff(summaries)
 
-      db.run(DBIO.seq(
-        summary ++= diff2
-      )).v
+        db.run(DBIO.seq(
+          summary ++= diff
+        )).v
+      }
+
+      locally {
+        val genresList = db.run(genres.result.map(_.map(a => a._2 -> a._1))).v.toMap
+        val summaries = db.run(summary.result.map(_.map(a => a._4 -> a._1))).v.toMap
+
+        val sumGen = db.run(list.result.map(_.map(a => (a._2, a._3)))).v.toSet
+        val sumGen2 = itemCache.cache.values.map(_.getSummary).flatMap(a => a.genres.map(b => (summaries(a.link), genresList(b)))).toSet
+        val diff = sumGen2.diff(sumGen)
+        db.run(DBIO.seq(
+          list ++= diff.map(a => (0, a._1, a._2))
+        )).v
+      }
+
 
       db.close()
     }

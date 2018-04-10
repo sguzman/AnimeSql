@@ -133,7 +133,8 @@ object animesql extends ScalaModule {
     ivy"com.typesafe.slick::slick:3.2.3",
     ivy"org.slf4j:slf4j-nop:1.8.0-beta2",
     ivy"com.typesafe.slick::slick-hikaricp:3.2.3",
-    ivy"mysql:mysql-connector-java:8.0.9-rc"
+    ivy"org.postgresql:postgresql:42.2.2.jre7",
+    ivy"com.typesafe::config:1.3.32"
   )
 
   def forkArgs = Seq("-Xmx4g")

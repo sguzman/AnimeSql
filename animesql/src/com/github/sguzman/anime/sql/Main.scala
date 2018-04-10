@@ -10,6 +10,7 @@ import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.element
 import org.apache.commons.lang3.StringUtils
 import slick.jdbc.MySQLProfile.api._
+import slick.jdbc.meta.MTable
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
@@ -104,7 +105,7 @@ object Main {
     get[A](s)(cache.contains)(cache.apply)(doc)
 
   implicit final class FutureWrap[A](future: Future[A]) {
-    def v = Await.result(future, 1000 seconds)
+    def v = Await.result(future, Duration.Inf)
   }
 
   def main(args: Array[String]): Unit = {

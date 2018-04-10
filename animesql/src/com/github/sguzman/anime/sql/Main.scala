@@ -66,7 +66,6 @@ object Main {
   trait Cacheable[B] {
     def contains(s: String): Boolean
     def apply(s: String): B
-    def put(s: String, b: B): Unit
   }
 
   def get[A <: Cacheable[B], B](url: String, cache: A) (f: Browser#DocumentType => B): B =
@@ -79,29 +78,25 @@ object Main {
       val html = HUtil.retryHttpGet(url)
       val result = f(html.doc)
       scribe.info(s"Got key $url -> $result")
-      cache.put(url, result)
       result
     } else {
       val html = HUtil.retryHttpGet(url)
       val result = f(html.doc)
       scribe.info(s"After HTTP request, got key $url -> $result")
-      cache.put(url, result)
       result
     }
 
   def get[A](s: String)
             (cont: String => Boolean)
             (appl: String => A)
-            (pu: (String, A) => Unit)
             (f: Browser#DocumentType => A): A =
     get[Cacheable[A], A](s, new Cacheable[A] {
       override def contains(s: String): Boolean = cont(s)
       override def apply(s: String): A = appl(s)
-      override def put(s: String, b: A): Unit = pu(s, b)
     }) (f)
 
   def extract[A](s: String, cache: mutable.Map[String, A])(doc: Browser#DocumentType => A): A =
-    get[A](s)(cache.contains)(cache.apply)((a,b) => { val _ = cache.put(a,b) } )(doc)
+    get[A](s)(cache.contains)(cache.apply)(doc)
 
   def main(args: Array[String]): Unit = {
     locally {
@@ -136,7 +131,7 @@ object Main {
       val animes = itemCache.sums.par.map{a =>
         val url = s"https://www.anime-planet.com${a.link}"
 
-        val anime = get(url)(itemCache.cache.contains)(itemCache.cache.apply)((_, _) => {}) {doc =>
+        val anime = get(url)(itemCache.cache.contains)(itemCache.cache.apply){doc =>
           val alt = doc.maybe("h2.aka").map(_.text).getOrElse("")
           println(a.link)
           val rawRank = doc.map("#siteContainer > section.pure-g.entryBar > div:nth-child(5)").text
@@ -162,7 +157,7 @@ object Main {
       val users = itemCache.cache.par.map{a =>
         val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
 
-        val user = get(url)(itemCache.anime.contains)(itemCache.anime.apply)((_, _) => {}) {doc =>
+        val user = get(url)(itemCache.anime.contains)(itemCache.anime.apply){doc =>
           val watched = doc.maybe("ul.statList > li.status1 > a > span.slCount").map(_.text.replaceAll(",","").toInt).getOrElse(0)
           val watching = doc.map("ul.statList > li.status2 > a > span.slCount").text.replaceAll(",","").toInt
           val wantToWatch = doc.map("ul.statList > li.status3 > a > span.slCount").text.replaceAll(",","").toInt

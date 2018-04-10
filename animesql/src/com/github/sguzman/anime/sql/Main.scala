@@ -107,7 +107,7 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-    locally {
+    identity {
       val pages = 1 to 318
       val shows = pages.par.flatMap{a =>
         val url = s"https://www.anime-planet.com/anime/all?page=$a"
@@ -133,9 +133,8 @@ object Main {
         }
       }.toList
       itemCache = itemCache.addAllSums(shows)
-    }
-
-    locally {
+      true
+    } && identity {
       val animes = itemCache.sums.par.map{a =>
         val url = s"https://www.anime-planet.com${a.link}"
 
@@ -159,9 +158,8 @@ object Main {
       }.toList
 
       itemCache = itemCache.addAllCache(animes)
-    }
-
-    locally {
+      true
+    } && identity {
       val users = itemCache.cache.par.map{a =>
         val url = s"https://www.anime-planet.com/ajaxDelegator.php?mode=stats&type=anime&id=${a._2.id}&url=${a._1.afterLast("/")}"
 
@@ -180,9 +178,8 @@ object Main {
       }.toList
 
       itemCache = itemCache.addAllAnime(users)
-    }
-
-    locally {
+      true
+    } && identity {
       final class Genres(tag: Tag) extends Table[(Int, String)](tag, "genres") {
         def id = column[Int]("genre_id", O.Unique, O.PrimaryKey, O.AutoInc)
         def name = column[String]("name")
@@ -216,9 +213,8 @@ object Main {
 
       val db = Database.forURL("jdbc:postgresql://localhost:5432/postgres", driver = "org.postgresql.Driver", user = "alice", password = "pass")
 
-      locally {
+      identity {
         val tables = List(genres, summary, list)
-        println(tables)
 
         tables.par.foreach{a =>
           util.Try(db.run(DBIO.seq(a.schema.create)).v) match {
@@ -226,9 +222,9 @@ object Main {
             case _ => println("Successfully created db")
           }
         }
-      }
 
-      locally {
+        true
+      } && identity {
         val genresList = db.run(genres.result.map(_.map(a => a._2))).v.toSet
         val genreList = itemCache.cache.values.flatMap(_.getSummary.genres).toSet
 
@@ -236,9 +232,8 @@ object Main {
         db.run(DBIO.seq(
           genres ++= diff.map((0, _))
         )).v
-      }
-
-      locally {
+        true
+      } && identity {
         val summaries = db.run(summary.result.map(_.map(a => (0, a._2, a._3, a._4, a._5, a._6, a._7, a._8)))).v.toSet
         val summaries2 = itemCache.cache.values.map(_.getSummary).map(a => (0, a.title, a.img, a.link, a.desc, a.studio, a.rating, a.showType)).toSet
         val diff = summaries2.diff(summaries)
@@ -246,9 +241,8 @@ object Main {
         db.run(DBIO.seq(
           summary ++= diff
         )).v
-      }
-
-      locally {
+        true
+      } && identity {
         val genresList = db.run(genres.result.map(_.map(a => a._2 -> a._1))).v.toMap
         val summaries = db.run(summary.result.map(_.map(a => a._4 -> a._1))).v.toMap
 
@@ -258,9 +252,11 @@ object Main {
         db.run(DBIO.seq(
           list ++= diff.map(a => (0, a._1, a._2))
         )).v
+        true
       }
 
       db.close()
+      true
     }
 
     scribe.info("done")

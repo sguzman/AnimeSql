@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package com.github.sguzman.anime.protoc;
-
-import "com/gihub/sguzman/anime/protoc/items.proto";
-
-message StoreCache {
-    map<string, AnimeUser> cache = 1;
-}

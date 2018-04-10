@@ -171,17 +171,6 @@ object Main {
       }
     )
 
-    locally {
-      val items: scala.collection.immutable.Map[String, AnimeUser] = itemCache.anime.map(a => a._2.getAnime.getSummary.link -> a._2)
-      val file = new File("./store.msg")
-      val output = new FileOutputStream(file)
-
-      scribe.info("Writing store.msg")
-      store.StoreCache(items).writeTo(output)
-      scribe.info("Wrote store.msg")
-      output.close()
-    }
-
     scribe.info("done")
   }
 }

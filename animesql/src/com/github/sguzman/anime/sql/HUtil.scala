@@ -4,6 +4,7 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.SocketTimeoutException
 
 import com.github.sguzman.brotli.Brotli
+import com.github.sguzman.anime.protoc.http
 import com.google.protobuf.ByteString
 import scalaj.http.Http
 

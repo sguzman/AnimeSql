@@ -4,18 +4,17 @@ import java.io.{File, FileInputStream, FileOutputStream}
 
 import com.github.sguzman.anime.protoc.items._
 import net.ruippeixotog.scalascraper.browser.{Browser, JsoupBrowser}
-import net.ruippeixotog.scalascraper.model.Element
 import net.ruippeixotog.scalascraper.dsl.DSL._
-import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
-import net.ruippeixotog.scalascraper.scraper.ContentExtractors.element
+import net.ruippeixotog.scalascraper.model.Element
+import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
 import org.apache.commons.lang3.StringUtils
 import slick.jdbc.MySQLProfile.api._
-import slick.jdbc.meta.MTable
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
-import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.util.Failure
 
 object Main {
   var itemCache: Items = identity {
@@ -219,14 +218,14 @@ object Main {
 
       locally {
         val tables = List(genres, summary, list)
+        println(tables)
 
-        val existing = db.run(MTable.getTables)
-        existing.flatMap( v => {
-          val names = v.map(mt => mt.name.name)
-          val createIfNotExist = tables.filter( table =>
-            !names.contains(table.baseTableRow.tableName)).map(_.schema.create)
-          db.run(DBIO.sequence(createIfNotExist))
-        }).v
+        tables.par.foreach{a =>
+          util.Try(db.run(DBIO.seq(a.schema.create)).v) match {
+            case Failure(e) => println(s"Could not create db ${e.getMessage}")
+            case _ => println("Successfully created db")
+          }
+        }
       }
 
       locally {

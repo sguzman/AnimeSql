@@ -216,8 +216,12 @@ object Main {
         genres ++= diff.map((0, _))
       )).v
 
+      val summaries = db.run(summary.result.map(_.map(a => (0, a._2, a._3, a._4, a._5, a._6, a._7, a._8)))).v.toSet
+      val summaries2 = itemCache.cache.values.map(_.getSummary).map(a => (0, a.title, a.img, a.link, a.desc, a.studio, a.rating, a.showType)).toSet
+      val diff2 = summaries2.diff(summaries)
+
       db.run(DBIO.seq(
-        summary ++= itemCache.cache.values.map(_.getSummary).map(a => (0, a.title, a.img, a.link, a.desc, a.studio, a.rating, a.showType))
+        summary ++= diff2
       )).v
 
       db.close()

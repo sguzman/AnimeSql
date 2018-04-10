@@ -260,18 +260,6 @@ object Main {
         )).v
       }
 
-      locally {
-        val query = for {
-          g <- genres
-          s <- summary
-          l <- list if g.id === l.genId && s.id === l.sumId
-        } yield (s.title, g.name)
-
-        val results = db.run(query.result).v
-
-        println(results.sortBy(_._1))
-      }
-
       db.close()
     }
 

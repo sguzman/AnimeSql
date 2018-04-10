@@ -8,7 +8,7 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{element, elementList}
 import org.apache.commons.lang3.StringUtils
-import slick.jdbc.MySQLProfile.api._
+import slick.jdbc.PostgresProfile.api._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -214,7 +214,7 @@ object Main {
       }
       val list = TableQuery[List]
 
-      val db = Database.forURL("jdbc:mysql://localhost/fun?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", driver = "com.mysql.cj.jdbc.Driver", user = "root")
+      val db = Database.forConfig("posgres")
 
       locally {
         val tables = List(genres, summary, list)

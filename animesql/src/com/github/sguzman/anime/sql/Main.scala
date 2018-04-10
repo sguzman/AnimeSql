@@ -9,8 +9,13 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.element
 import org.apache.commons.lang3.StringUtils
+import slick.jdbc.MySQLProfile.api._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object Main {
   var itemCache: Items = identity {
@@ -98,6 +103,10 @@ object Main {
   def extract[A](s: String, cache: mutable.Map[String, A])(doc: Browser#DocumentType => A): A =
     get[A](s)(cache.contains)(cache.apply)(doc)
 
+  implicit final class FutureWrap[A](future: Future[A]) {
+    def v = Await.result(future, 1000 seconds)
+  }
+
   def main(args: Array[String]): Unit = {
     locally {
       val pages = 1 to 318
@@ -172,6 +181,46 @@ object Main {
       }.toList
 
       itemCache = itemCache.addAllAnime(users)
+    }
+
+    locally {
+      final class Genres(tag: Tag) extends Table[(Int, String)](tag, "genres") {
+        def id = column[Int]("genre_id", O.Unique, O.PrimaryKey, O.AutoInc)
+        def name = column[String]("name")
+
+        def * = (id, name)
+      }
+      val genres = TableQuery[Genres]
+
+      final class Summary(tag: Tag) extends Table[(Int, String, String, String, String, String, Double, String)](tag, "summary") {
+        def id = column[Int]("summary_id", O.Unique, O.PrimaryKey, O.AutoInc)
+        def title = column[String]("title", O.Unique)
+        def img = column[String]("img")
+        def link = column[String]("link", O.Unique)
+        def desc = column[String]("desc")
+        def studio = column[String]("studio")
+        def rating = column[Double]("rating")
+        def showType = column[String]("showType")
+
+        def * = (id, title, img, lin, desc, studio, rating, showType)
+      }
+      val summary = TableQuery[Summary]
+
+      val db = Database.forURL("jdbc:mysql://localhost/fun?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", driver = "com.mysql.cj.jdbc.Driver", user = "root")
+
+      val genresList = db.run(genres.result.map(_.map(a => a._2))).v.toSet
+      val genreList = itemCache.cache.values.flatMap(_.getSummary.genres).toSet
+
+      val diff = genreList.diff(genresList)
+      db.run(DBIO.seq(
+        genres ++= diff.map((0, _))
+      )).v
+
+      db.run(DBIO.seq(
+        summary ++= itemCache.cache.values.map(_.getSummary).map(a => (0, a.title, a.img, a.link, a.desc, a.studio, a.rating, a.showType))
+      )).v
+
+      db.close()
     }
 
     scribe.info("done")

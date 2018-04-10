@@ -195,7 +195,7 @@ object Main {
         def id = column[Int]("summary_id", O.Unique, O.PrimaryKey, O.AutoInc)
         def title = column[String]("title")
         def img = column[String]("img")
-        def link = column[String]("link", O.Unique)
+        def link = column[String]("link", O.Unique, O.Length(200))
         def desc = column[String]("desc")
         def studio = column[String]("studio")
         def rating = column[Double]("rating")

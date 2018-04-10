@@ -219,6 +219,18 @@ object Main {
       val db = Database.forURL("jdbc:mysql://localhost/fun?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", driver = "com.mysql.cj.jdbc.Driver", user = "root")
 
       locally {
+        val tables = List(genres, summary, list)
+
+        val existing = db.run(MTable.getTables)
+        existing.flatMap( v => {
+          val names = v.map(mt => mt.name.name)
+          val createIfNotExist = tables.filter( table =>
+            !names.contains(table.baseTableRow.tableName)).map(_.schema.create)
+          db.run(DBIO.sequence(createIfNotExist))
+        }).v
+      }
+
+      locally {
         val genresList = db.run(genres.result.map(_.map(a => a._2))).v.toSet
         val genreList = itemCache.cache.values.flatMap(_.getSummary.genres).toSet
 
@@ -249,7 +261,6 @@ object Main {
           list ++= diff.map(a => (0, a._1, a._2))
         )).v
       }
-
 
       locally {
         val query = for {

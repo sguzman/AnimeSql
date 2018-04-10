@@ -259,7 +259,7 @@ object Main {
 
         val results = db.run(query.result).v
 
-        println(results)
+        println(results.sortBy(_._1))
       }
 
       db.close()
